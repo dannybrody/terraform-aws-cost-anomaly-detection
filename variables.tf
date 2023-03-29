@@ -3,12 +3,12 @@ variable "threshold_type" {
   type        = string
 
   validation {
-    condition     = contains(["AMOUNT", "PERCENT"], var.threshold_type)
-    error_message = "threshold_type must be AMOUNT or PERCENT"
+    condition     = contains(["ANOMALY_TOTAL_IMPACT_ABSOLUTE", "ANOMALY_TOTAL_IMPACT_PERCENTAGE"], var.threshold_type)
+    error_message = "threshold_type must be  ANOMALY_TOTAL_IMPACT_ABSOLUTE for an alert based on absolute value or ANOMALY_TOTAL_IMPACT_PERCENTAGE for a percentage alert"
   }
 }
 variable "cost_threshold" {
-  description = "Defines the value to trigger an alert"
+  description = "Defines the value to trigger an alert depending on the value chosen for the threshold_type variable, it will represent a percentage or an actual cost increase"
   type        = number
 }
 
@@ -32,4 +32,16 @@ variable "tags" {
   description = "Map of tags to apply to resources"
   type        = map(string)
   default     = {}
+}
+
+variable "name" {
+  description = "name for the monitors, topic, etc"
+  type        = string
+  default     = "cost-Anomaly-monitor"
+}
+
+variable "SNS_KMS_key" {
+  description = "id of the KMS key to encrypt SNS messages"
+  type        = string
+  default     = "alias/aws/sns"
 }

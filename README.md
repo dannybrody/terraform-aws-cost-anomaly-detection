@@ -8,16 +8,17 @@ It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and
 
 ![diagram](docs/images/cost_monitor_diagram.png "diagram")
 
-**Before starting follow these steps to allow AWS to access your slack workspace**
+
+## Before starting follow these steps to allow AWS to access your slack workspace**
 
 1. Access the AWS console on the account that the Cost alerts will monitor. In a CT environment, all billing is commonly centralized in the root account
 2. Access AWS ChatBot service, choose Slack on the Chat client dropdown box, and click on Configure Client
 
-![AWS ChatBot](docs\images\chatbot_screenshot_1.png "AWS ChatBot")
+![AWS ChatBot](docs/images/chatbot_screenshot_1.png "AWS ChatBot")
 
 3. Click on Allow on the next page.
 
-![AWS ChatBot](docs\images\chatbot_screenshot_2.png "AWS ChatBot")
+![AWS ChatBot](docs/images/chatbot_screenshot_2.png "AWS ChatBot")
 
 4. Create a channel to receive the cost alerts in slack as usual. 
 5. In the Slack interface right click on the channel name and select copy link
@@ -71,7 +72,7 @@ No modules.
 | <a name="input_slack_channel_id"></a> [slack\_channel\_id](#input\_slack\_channel\_id) | right click on the channel name, copy channel URL, and use the letters and number after the last / | `string` | n/a | yes |
 | <a name="input_slack_workspace_id"></a> [slack\_workspace\_id](#input\_slack\_workspace\_id) | ID of your slack slack\_workspace\_id | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to apply to resources | `map(string)` | `{}` | no |
-| <a name="input_threshold_type"></a> [threshold\_type](#input\_threshold\_type) | especify if the alert with trigger based on a total amount or a percentage | `string` | n/a | yes |
+| <a name="input_threshold_type"></a> [threshold\_type](#input\_threshold\_type) | especify if the alert with trigger based on a total amount or a percentage. Possible values: "ANOMALY_TOTAL_IMPACT_ABSOLUTE" or "ANOMALY_TOTAL_IMPACT_PERCENTAGE" | `string` | n/a | yes |
 
 ## Outputs
 
