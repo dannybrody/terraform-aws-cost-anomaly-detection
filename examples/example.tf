@@ -6,5 +6,7 @@ module "cost_anomaly_detector" {
   slack_workspace_id = var.slack_workspace_id
   tags = {
     key = "value"
+    "caylent:owner" = "manuel.palacios@caylent.com",
+	"caylent:workload"= "cost"
   }
 }

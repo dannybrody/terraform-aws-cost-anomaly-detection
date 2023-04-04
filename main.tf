@@ -71,9 +71,58 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
 resource "awscc_chatbot_slack_channel_configuration" "chatbot_slack_channel" {
   count              = var.enable_slack_integration ? 1 : 0
   configuration_name = "${var.name}-slack-config"
-  iam_role_arn       = data.aws_iam_role.chatbot_service_role.arn
+  iam_role_arn       = aws_iam_role.chatbot_role.arn
   slack_channel_id   = var.slack_channel_id
   slack_workspace_id = var.slack_workspace_id
   guardrail_policies = ["arn:aws:iam::aws:policy/ReadOnlyAccess", ]
   sns_topic_arns     = [aws_sns_topic.cost_anomaly_topic.arn]
+}
+
+data "aws_iam_policy_document" "chatbot_channel_policy_document" {
+  statement {
+    actions = [
+                "sns:ListSubscriptionsByTopic",
+                "sns:ListTopics",
+                "sns:Unsubscribe",
+                "sns:Subscribe",
+                "sns:ListSubscriptions"
+            ]
+  }
+  statement {
+    actions = [
+              "logs:PutLogEvents",
+              "logs:CreateLogStream",
+              "logs:DescribeLogStreams",
+              "logs:CreateLogGroup",
+              "logs:DescribeLogGroups"
+          ]
+      resources = ["arn:aws:logs:*:*:log-group:/aws/chatbot/*"]
+  }
+}
+
+resource "aws_iam_policy" "chatbot_channel_policy" {
+  name   = "${var.name}-channel-policy"
+  policy = data.aws_iam_policy_document.chatbot_channel_policy_document.json
+}
+
+
+data "aws_iam_policy_document" "chatbot_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["management.chatbot.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "chatbot_role" {
+  name               = "${var.name}-chatbot-role"
+  assume_role_policy = data.aws_iam_policy_document.chatbot_assume_role_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "chatbot_role_attachement" {
+  role       = aws_iam_role.chatbot_role.name
+  policy_arn = aws_iam_policy.chatbot_channel_policy.arn
 }

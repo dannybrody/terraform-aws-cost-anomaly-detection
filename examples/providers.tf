@@ -12,9 +12,9 @@ terraform {
 }
 
 provider "aws" {
-  region = data.aws_region.current.name
+  region = var.region
 }
 
 provider "awscc" {
-  region = data.aws_region.current.name
+  region = var.region
 }
