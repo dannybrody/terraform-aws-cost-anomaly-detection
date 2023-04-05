@@ -23,8 +23,11 @@ It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and
 4. Create a channel to receive the cost alerts in slack as usual. 
 5. In the Slack interface right click on the channel name and select copy link
 6. From the URL, pick up the channel ID and use it on the repo as the value for the slack_channel_id variable. Example: https://caylent.slack.com/archives/**C018WLGMXYZ**
-7. Access Slack on your web browser. Log in with your credentials, and pick up the Workspace ID from the URL and use it’s value in the repo as a value for the slack_workspace_id variable. 
+7. Access Slack on your web browser. Log in with your credentials, and pick up the Workspace ID from the URL and use its value in the repo as a value for the slack_workspace_id variable. 
 Example: https://app.slack.com/client/**T01JK23AB**/slack-connect
+8. Invite the AWS ChatBot app to the channel.
+   
+   ![AWS ChatBot](docs/images/chatbot_screenshot_3.png "AWS ChatBot")
 
 Once this is done, Terraform can be applied to create the alerts, subscriptions, SNS topic, and the configuration that maps the slack channel with the alerts.
 
