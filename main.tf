@@ -87,6 +87,7 @@ data "aws_iam_policy_document" "chatbot_channel_policy_document" {
                 "sns:Subscribe",
                 "sns:ListSubscriptions"
             ]
+    resources = ["*"]
   }
   statement {
     actions = [
@@ -96,7 +97,7 @@ data "aws_iam_policy_document" "chatbot_channel_policy_document" {
               "logs:CreateLogGroup",
               "logs:DescribeLogGroups"
           ]
-      resources = ["arn:aws:logs:*:*:log-group:/aws/chatbot/*"]
+    resources = ["arn:aws:logs:*:*:log-group:/aws/chatbot/*"]
   }
 }
 
