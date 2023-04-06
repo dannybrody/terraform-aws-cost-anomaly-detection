@@ -47,7 +47,7 @@ variable "SNS_KMS_key" {
 }
 
 variable "sns_topic_arn" {
-  description = "ARN of an already existing SNS topic to send alerts"
+  description = "ARN of an already existing SNS topic to send alerts. If a value is provided, the module will not create an SNS topic"
   type = string
   default = ""
 }
