@@ -45,3 +45,9 @@ variable "SNS_KMS_key" {
   type        = string
   default     = "alias/aws/sns"
 }
+
+variable "sns_topic_arn" {
+  description = "ARN of an already existing SNS topic to send alerts"
+  type = string
+  default = ""
+}

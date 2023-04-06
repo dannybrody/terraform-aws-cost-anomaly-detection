@@ -1,10 +1,12 @@
 resource "aws_sns_topic" "cost_anomaly_topic" {
+  count = var.sns_topic_arn == "" ? 1 : 0
   name              = "${var.name}-topic"
   kms_master_key_id = var.SNS_KMS_key
   tags              = var.tags
 }
 
 data "aws_iam_policy_document" "sns_topic_policy_document" {
+  count = var.sns_topic_arn == "" ? 1 : 0
   policy_id = "${var.name}-policy-ID"
 
   statement {
@@ -22,15 +24,16 @@ data "aws_iam_policy_document" "sns_topic_policy_document" {
     }
 
     resources = [
-      aws_sns_topic.cost_anomaly_topic.arn,
+      aws_sns_topic.cost_anomaly_topic[0].arn,
     ]
   }
 }
 
 resource "aws_sns_topic_policy" "sns_topic_policy" {
-  arn = aws_sns_topic.cost_anomaly_topic.arn
+  count = var.sns_topic_arn == "" ? 1 : 0
+  arn = aws_sns_topic.cost_anomaly_topic[count.index].arn
 
-  policy = data.aws_iam_policy_document.sns_topic_policy_document.json
+  policy = data.aws_iam_policy_document.sns_topic_policy_document[count.index].json
 }
 
 resource "aws_ce_anomaly_monitor" "anomaly_monitor" {
@@ -58,11 +61,11 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
 
   subscriber {
     type    = "SNS"
-    address = aws_sns_topic.cost_anomaly_topic.arn
+    address = var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[0].arn : var.sns_topic_arn
   }
 
   depends_on = [
-    aws_sns_topic_policy.sns_topic_policy,
+    aws_sns_topic_policy.sns_topic_policy, aws_sns_topic.cost_anomaly_topic
   ]
   tags = var.tags
 }
@@ -75,7 +78,7 @@ resource "awscc_chatbot_slack_channel_configuration" "chatbot_slack_channel" {
   slack_channel_id   = var.slack_channel_id
   slack_workspace_id = var.slack_workspace_id
   guardrail_policies = ["arn:aws:iam::aws:policy/ReadOnlyAccess", ]
-  sns_topic_arns     = [aws_sns_topic.cost_anomaly_topic.arn]
+  sns_topic_arns     = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[count.index].arn: var.sns_topic_arn]
 }
 
 data "aws_iam_policy_document" "chatbot_channel_policy_document" {
@@ -87,7 +90,7 @@ data "aws_iam_policy_document" "chatbot_channel_policy_document" {
                 "sns:Subscribe",
                 "sns:ListSubscriptions"
             ]
-    resources = ["*"]
+    resources = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[0].arn : var.sns_topic_arn]
   }
   statement {
     actions = [
@@ -97,7 +100,7 @@ data "aws_iam_policy_document" "chatbot_channel_policy_document" {
               "logs:CreateLogGroup",
               "logs:DescribeLogGroups"
           ]
-    resources = ["arn:aws:logs:*:*:log-group:/aws/chatbot/*"]
+    resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/chatbot/*"]
   }
 }
 
