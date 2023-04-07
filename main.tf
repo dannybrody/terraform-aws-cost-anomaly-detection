@@ -1,7 +1,6 @@
 resource "aws_sns_topic" "cost_anomaly_topic" {
   count = var.sns_topic_arn == "" ? 1 : 0
   name              = "${var.name}-topic"
-  kms_master_key_id = var.SNS_KMS_key
   tags              = var.tags
 }
 
