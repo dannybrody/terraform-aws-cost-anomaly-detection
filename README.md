@@ -56,7 +56,8 @@ No modules.
 
 | Name | Type |
 |------|------|
-| [aws_ce_anomaly_monitor.anomaly_monitor](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ce_anomaly_monitor) | resource |
+| [aws_ce_anomaly_monitor.linked_account_anomaly_monitor](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ce_anomaly_monitor) | resource |
+| [aws_ce_anomaly_monitor.service_anomaly_monitor](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ce_anomaly_monitor) | resource |
 | [aws_ce_anomaly_subscription.anomaly_subscription](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ce_anomaly_subscription) | resource |
 | [aws_iam_policy.chatbot_channel_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.chatbot_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
@@ -74,15 +75,16 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_SNS_KMS_key"></a> [SNS\_KMS\_key](#input\_SNS\_KMS\_key) | id of the KMS key to encrypt SNS messages | `string` | `"alias/aws/sns"` | no |
-| <a name="input_cost_threshold"></a> [cost\_threshold](#input\_cost\_threshold) | Defines the value to trigger an alert depending on the value chosen for the threshold\_type variable, it will represent a percentage or an actual cost increase | `number` | n/a | yes |
-| <a name="input_enable_slack_integration"></a> [enable\_slack\_integration](#input\_enable\_slack\_integration) | If false, the module will create an SNS topic without an slack channel integration. Use it when another subscriber to the SNS topic is preffered | `bool` | `true` | no |
+| <a name="input_accounts"></a> [accounts](#input\_accounts) | List of AWS accounts to monitor. Required if multi\_account=true | `list(string)` | `[]` | no |
+| <a name="input_alert_threshold"></a> [alert\_threshold](#input\_alert\_threshold) | Defines the value to trigger an alert. Depending on the value chosen for the threshold\_type variable, it will represent a percentage or an absolute ammount of money | `number` | n/a | yes |
+| <a name="input_enable_slack_integration"></a> [enable\_slack\_integration](#input\_enable\_slack\_integration) | Set to false if slack integration is not needed and another subscriber to the SNS topic is preffered | `bool` | `true` | no |
+| <a name="input_multi_account"></a> [multi\_account](#input\_multi\_account) | true if multiple accounts should be monitored. In which case the solution must be deployed on the root account of a CT deployment | `bool` | `true` | no |
 | <a name="input_name"></a> [name](#input\_name) | name for the monitors, topic, etc | `string` | `"cost-Anomaly-monitor"` | no |
 | <a name="input_slack_channel_id"></a> [slack\_channel\_id](#input\_slack\_channel\_id) | right click on the channel name, copy channel URL, and use the letters and number after the last / | `string` | n/a | yes |
 | <a name="input_slack_workspace_id"></a> [slack\_workspace\_id](#input\_slack\_workspace\_id) | ID of your slack slack\_workspace\_id | `string` | n/a | yes |
-| <a name="input_sns_topic_arn"></a> [sns\_topic\_arn](#input\_sns\_topic\_arn) | ARN of an already existing SNS topic to send alerts. If a value is provided, the module will not create an SNS topic | `string` | `""` | no |
+| <a name="input_sns_topic_arn"></a> [sns\_topic\_arn](#input\_sns\_topic\_arn) | ARN of an already existing SNS topic to send alerts. If a value is provided, the module will not create a SNS topic | `string` | `""` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to apply to resources | `map(string)` | `{}` | no |
-| <a name="input_threshold_type"></a> [threshold\_type](#input\_threshold\_type) | especify if the alert with trigger based on a total amount or a percentage | `string` | n/a | yes |
+| <a name="input_threshold_type"></a> [threshold\_type](#input\_threshold\_type) | Indicate if the alert will trigger based on a absolute amount or a percentage | `string` | n/a | yes |
 
 ## Outputs
 

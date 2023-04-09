@@ -1,11 +1,11 @@
 resource "aws_sns_topic" "cost_anomaly_topic" {
   count = var.sns_topic_arn == "" ? 1 : 0
-  name              = "${var.name}-topic"
-  tags              = var.tags
+  name  = "${var.name}-topic"
+  tags  = var.tags
 }
 
 data "aws_iam_policy_document" "sns_topic_policy_document" {
-  count = var.sns_topic_arn == "" ? 1 : 0
+  count     = var.sns_topic_arn == "" ? 1 : 0
   policy_id = "${var.name}-policy-ID"
 
   statement {
@@ -30,38 +30,45 @@ data "aws_iam_policy_document" "sns_topic_policy_document" {
 
 resource "aws_sns_topic_policy" "sns_topic_policy" {
   count = var.sns_topic_arn == "" ? 1 : 0
-  arn = aws_sns_topic.cost_anomaly_topic[count.index].arn
+  arn   = aws_sns_topic.cost_anomaly_topic[count.index].arn
 
   policy = data.aws_iam_policy_document.sns_topic_policy_document[count.index].json
 }
 
-resource "aws_ce_anomaly_monitor" "anomaly_monitor" {
+resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
+  count             = var.multi_account ? 0 : 1
   name              = var.name
-  monitor_type      = "DIMENSIONAL" # recommended by AWS 
-  monitor_dimension = "SERVICE" # recommended by AWS
+  monitor_type      = "DIMENSIONAL"
+  monitor_dimension = "SERVICE"
   tags              = var.tags
 }
 
-resource "aws_ce_anomaly_monitor" "test_monitor" {
-  name              = var.name
-  monitor_type      = "CUSTOM" # recommended by AWS 
-  monitor_specification = <<JSON
-  {
-      "And": null,
-      "CostCategories": null,
-      "Dimensions": null,
-      "Not": null,
-      "Or": null,
-      "Tags": {
-          "Key": "CostCenter",
-          "MatchOptions": null,
-          "Values": [
-              "10000"
-          ]
+resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
+  count        = var.multi_account ? 1 : 0
+  name         = var.name
+  monitor_type = "CUSTOM"
+  monitor_specification = jsonencode(
+    {
+      # Do not remove null values. Otherwise TF will recreate the monitor on each apply
+      And            = null
+      CostCategories = null
+      Dimensions = {
+        Key          = "LINKED_ACCOUNT"
+        MatchOptions = null
+        Values       = var.accounts
       }
+      Not  = null
+      Or   = null
+      Tags = null
+    }
+  )
+  tags = var.tags
+  lifecycle {
+    precondition {
+      condition = length(var.accounts) > 0
+      error_message = "If multi_account is true, accounts can't be empty"
+    }
   }
-  JSON
-  tags              = var.tags
 }
 
 resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
@@ -69,7 +76,7 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
   threshold_expression {
     dimension {
       key           = var.threshold_type
-      values        = [var.cost_threshold]
+      values        = [var.alert_threshold]
       match_options = ["GREATER_THAN_OR_EQUAL"]
     }
   }
@@ -77,7 +84,7 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
   frequency = "IMMEDIATE" # required for alerts sent to SNS
 
   monitor_arn_list = [
-    aws_ce_anomaly_monitor.anomaly_monitor.arn,
+    var.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[0].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[0].arn,
   ]
 
   subscriber {
@@ -99,28 +106,28 @@ resource "awscc_chatbot_slack_channel_configuration" "chatbot_slack_channel" {
   slack_channel_id   = var.slack_channel_id
   slack_workspace_id = var.slack_workspace_id
   guardrail_policies = ["arn:aws:iam::aws:policy/ReadOnlyAccess", ]
-  sns_topic_arns     = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[count.index].arn: var.sns_topic_arn]
+  sns_topic_arns     = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[count.index].arn : var.sns_topic_arn]
 }
 
 data "aws_iam_policy_document" "chatbot_channel_policy_document" {
   statement {
     actions = [
-                "sns:ListSubscriptionsByTopic",
-                "sns:ListTopics",
-                "sns:Unsubscribe",
-                "sns:Subscribe",
-                "sns:ListSubscriptions"
-            ]
+      "sns:ListSubscriptionsByTopic",
+      "sns:ListTopics",
+      "sns:Unsubscribe",
+      "sns:Subscribe",
+      "sns:ListSubscriptions"
+    ]
     resources = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[0].arn : var.sns_topic_arn]
   }
   statement {
     actions = [
-              "logs:PutLogEvents",
-              "logs:CreateLogStream",
-              "logs:DescribeLogStreams",
-              "logs:CreateLogGroup",
-              "logs:DescribeLogGroups"
-          ]
+      "logs:PutLogEvents",
+      "logs:CreateLogStream",
+      "logs:DescribeLogStreams",
+      "logs:CreateLogGroup",
+      "logs:DescribeLogGroups"
+    ]
     resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/chatbot/*"]
   }
 }
