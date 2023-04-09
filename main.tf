@@ -42,6 +42,28 @@ resource "aws_ce_anomaly_monitor" "anomaly_monitor" {
   tags              = var.tags
 }
 
+resource "aws_ce_anomaly_monitor" "test_monitor" {
+  name              = var.name
+  monitor_type      = "CUSTOM" # recommended by AWS 
+  monitor_specification = <<JSON
+  {
+      "And": null,
+      "CostCategories": null,
+      "Dimensions": null,
+      "Not": null,
+      "Or": null,
+      "Tags": {
+          "Key": "CostCenter",
+          "MatchOptions": null,
+          "Values": [
+              "10000"
+          ]
+      }
+  }
+  JSON
+  tags              = var.tags
+}
+
 resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
   name = "${var.name}-subscription"
   threshold_expression {
