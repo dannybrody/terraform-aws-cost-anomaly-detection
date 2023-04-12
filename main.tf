@@ -8,7 +8,7 @@ resource "aws_sns_topic" "cost_anomaly_topic" {
 
 resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
   count             = var.multi_account ? 0 : 1
-  name              = var.name
+  name              = "SERVICE-${var.name}"
   monitor_type      = "DIMENSIONAL"
   monitor_dimension = "SERVICE"
   tags              = var.tags
@@ -16,7 +16,7 @@ resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
 
 resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
   count        = var.multi_account ? 1 : 0
-  name         = var.name
+  name         = "LINKED-ACCOUNT-${var.name}"
   monitor_type = "CUSTOM"
   monitor_specification = jsonencode(
     {
@@ -43,7 +43,7 @@ resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
 }
 
 resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
-  name = "${var.name}-subscription"
+  name = "${var.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[0].name : aws_ce_anomaly_monitor.service_anomaly_monitor[0].name}-subscription"
   threshold_expression {
     dimension {
       key           = var.threshold_type
