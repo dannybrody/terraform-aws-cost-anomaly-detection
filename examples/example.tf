@@ -7,7 +7,7 @@ module "cost_anomaly_detector" {
   accounts = [
     # list of AWS accounts to monitor
   ]
-  
+
   tags = {
     key                = "value"
     "caylent:owner"    = "manuel.palacios@caylent.com",
