@@ -1,39 +1,10 @@
 resource "aws_sns_topic" "cost_anomaly_topic" {
-  count = var.sns_topic_arn == "" ? 1 : 0
-  name  = "${var.name}-topic"
-  tags  = var.tags
-}
-
-data "aws_iam_policy_document" "sns_topic_policy_document" {
-  count     = var.sns_topic_arn == "" ? 1 : 0
-  policy_id = "${var.name}-policy-ID"
-
-  statement {
-    sid = "${var.name}-SNS-publishing-permissions"
-
-    actions = [
-      "SNS:Publish",
-    ]
-
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["costalerts.amazonaws.com"]
-    }
-
-    resources = [
-      aws_sns_topic.cost_anomaly_topic[0].arn,
-    ]
-  }
-}
-
-resource "aws_sns_topic_policy" "sns_topic_policy" {
-  count = var.sns_topic_arn == "" ? 1 : 0
-  arn   = aws_sns_topic.cost_anomaly_topic[count.index].arn
-
+  count  = var.sns_topic_arn == "" ? 1 : 0
+  name   = "${var.name}-topic"
   policy = data.aws_iam_policy_document.sns_topic_policy_document[count.index].json
+  tags   = var.tags
 }
+
 
 resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
   count             = var.multi_account ? 0 : 1
@@ -65,7 +36,7 @@ resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
   tags = var.tags
   lifecycle {
     precondition {
-      condition = length(var.accounts) > 0
+      condition     = length(var.accounts) > 0
       error_message = "If multi_account is true, accounts can't be empty"
     }
   }
@@ -92,17 +63,14 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
     address = var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[0].arn : var.sns_topic_arn
   }
 
-  depends_on = [
-    aws_sns_topic_policy.sns_topic_policy, aws_sns_topic.cost_anomaly_topic
-  ]
   tags = var.tags
 }
 
 
 resource "awscc_chatbot_slack_channel_configuration" "chatbot_slack_channel" {
-  count              = var.enable_slack_integration ? 1 : 0
+  count              = local.slack_integration
   configuration_name = "${var.name}-slack-config"
-  iam_role_arn       = aws_iam_role.chatbot_role.arn
+  iam_role_arn       = aws_iam_role.chatbot_role[0].arn
   slack_channel_id   = var.slack_channel_id
   slack_workspace_id = var.slack_workspace_id
   guardrail_policies = ["arn:aws:iam::aws:policy/ReadOnlyAccess", ]
@@ -133,6 +101,7 @@ data "aws_iam_policy_document" "chatbot_channel_policy_document" {
 }
 
 resource "aws_iam_policy" "chatbot_channel_policy" {
+  count  = local.slack_integration
   name   = "${var.name}-channel-policy"
   policy = data.aws_iam_policy_document.chatbot_channel_policy_document.json
 }
@@ -150,11 +119,13 @@ data "aws_iam_policy_document" "chatbot_assume_role_policy" {
 }
 
 resource "aws_iam_role" "chatbot_role" {
+  count              = local.slack_integration
   name               = "${var.name}-chatbot-role"
   assume_role_policy = data.aws_iam_policy_document.chatbot_assume_role_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "chatbot_role_attachement" {
-  role       = aws_iam_role.chatbot_role.name
-  policy_arn = aws_iam_policy.chatbot_channel_policy.arn
+  count      = local.slack_integration
+  role       = aws_iam_role.chatbot_role[0].name
+  policy_arn = aws_iam_policy.chatbot_channel_policy[0].arn
 }

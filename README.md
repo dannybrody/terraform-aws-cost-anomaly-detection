@@ -1,15 +1,15 @@
 # Cost anomaly detection and alerting
-This module leverages [AWS Cost Anomaly Detector](https://aws.amazon.com/aws-cost-management/aws-cost-anomaly-detection/) to identify unusual cost patterns in AWS and notify them inmediately.
+This module leverages [AWS Cost Anomaly Detector](https://aws.amazon.com/aws-cost-management/aws-cost-anomaly-detection/) to identify unusual cost patterns in AWS and notify them immediately.
 It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and optionally a slack channel configuration on AWS ChatBot.
 
-**AWS Cost Anomaly Monitor** Monitors the AWS account for unexpected costs. This module uses AWS' recomended configuration to evaluate each of the services you use individually, allowing smaller anomalies to be detected. Anomaly thresholds are automatically adjusted based on your historical service spend patterns.
+**AWS Cost Anomaly Monitor** Monitors the AWS account for unexpected costs. This module uses AWS' recommended configuration to evaluate each of the services you use individually, allowing smaller anomalies to be detected. Anomaly thresholds are automatically adjusted based on your historical service spend patterns.
 
 **Cost Anomaly Subscription** send an alert to SNS when cost monitor detects an anomaly and a threshold is exceeded. The threshold is configurable and it can be a fixed amount or a percentage.
 
 ![diagram](docs/images/cost_monitor_diagram.png "diagram")
 
 
-## Before starting follow these steps to allow AWS to access your slack workspace**
+## Before starting follow these steps to allow AWS to access your slack workspace
 
 1. Access the AWS console on the account that the Cost alerts will monitor. In a CT environment, all billing is commonly centralized in the root account
 2. Access AWS ChatBot service, choose Slack on the Chat client dropdown box, and click on Configure Client
@@ -22,9 +22,9 @@ It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and
 
 4. Create a channel to receive the cost alerts in slack as usual. 
 5. In the Slack interface right click on the channel name and select copy link
-6. From the URL, pick up the channel ID and use it on the repo as the value for the slack_channel_id variable. Example: https://caylent.slack.com/archives/**C018WLGMXYZ**
+6. From the URL, pick up the channel ID and use it on the repo as the value for the slack_channel_id variable. Example: https://caylent.slack.com/archives/C018WLGMXYZ (This is an example URL, C018WLGMXYZ is what needs to go into your tfvars file)
 7. Access Slack on your web browser. Log in with your credentials, and pick up the Workspace ID from the URL and use its value in the repo as a value for the slack_workspace_id variable. 
-Example: https://app.slack.com/client/**T01JK23AB**/slack-connect
+Example: https://app.slack.com/client/T01JK23AB/slack-connect (This is an example URL, T01JK23AB is the workspace ID that you need in your tfvars file)
 8. Invite the AWS ChatBot app to the channel.
    
    ![AWS ChatBot](docs/images/chatbot_screenshot_3.png "AWS ChatBot")
