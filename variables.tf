@@ -23,7 +23,7 @@ variable "slack_workspace_id" {
 }
 
 variable "enable_slack_integration" {
-  description = "Set to false if slack integration is not needed and another subscriber to the SNS topic is preffered"
+  description = "Set to false if slack integration is not needed and another subscriber to the SNS topic is preferred"
   type        = bool
   default     = true
 }
