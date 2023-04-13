@@ -25,3 +25,14 @@ data "aws_iam_policy_document" "sns_topic_policy_document" {
     ]
   }
 }
+
+data "aws_iam_policy_document" "chatbot_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["management.chatbot.amazonaws.com"]
+    }
+  }
+}

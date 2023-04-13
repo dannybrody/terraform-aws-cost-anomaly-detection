@@ -107,17 +107,6 @@ resource "aws_iam_policy" "chatbot_channel_policy" {
 }
 
 
-data "aws_iam_policy_document" "chatbot_assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["management.chatbot.amazonaws.com"]
-    }
-  }
-}
-
 resource "aws_iam_role" "chatbot_role" {
   count              = local.slack_integration
   name               = "${var.name}-chatbot-role"
