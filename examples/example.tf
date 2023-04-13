@@ -7,7 +7,7 @@ module "multi_account_cost_anomaly_detector" {
   slack_channel_id   = var.slack_channel_id
   slack_workspace_id = var.slack_workspace_id
   accounts = [
-    "081291135487"
+    # list of AWS accounts to monitor
   ]
 
   tags = {
