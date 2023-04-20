@@ -15,8 +15,9 @@ resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
 }
 
 resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
-  count        = var.multi_account ? 1 : 0
-  name         = "LINKED-ACCOUNT-${var.name}"
+  # Each linked account monitor only supports 10 accounts. This creates extra monitors if there are more than 10 accounts
+  count        = var.multi_account ? ceil(length(var.accounts)/10) : 0
+  name         = "LINKED-ACCOUNT-${var.name}-${count.index}"
   monitor_type = "CUSTOM"
   monitor_specification = jsonencode(
     {
@@ -26,7 +27,7 @@ resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
       Dimensions = {
         Key          = "LINKED_ACCOUNT"
         MatchOptions = null
-        Values       = var.accounts
+        Values       = chunklist(var.accounts, 10)[count.index]
       }
       Not  = null
       Or   = null
@@ -54,9 +55,7 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
 
   frequency = "IMMEDIATE" # required for alerts sent to SNS
 
-  monitor_arn_list = [
-    var.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[0].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[0].arn,
-  ]
+  monitor_arn_list = var.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[*].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[*].arn  
 
   subscriber {
     type    = "SNS"
