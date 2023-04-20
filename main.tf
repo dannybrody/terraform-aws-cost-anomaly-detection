@@ -15,6 +15,7 @@ resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
 }
 
 resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
+  # Each linked account monitor only supports 10 accounts. This creates extra monitors if there are more than 10 accounts
   count        = var.multi_account ? ceil(length(var.accounts)/10) : 0
   name         = "LINKED-ACCOUNT-${var.name}-${count.index}"
   monitor_type = "CUSTOM"
