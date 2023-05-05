@@ -7,7 +7,7 @@ resource "aws_sns_topic" "cost_anomaly_topic" {
 
 
 resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
-  count             = var.multi_account ? 0 : 1
+  count             = local.multi_account ? 0 : 1
   name              = "SERVICE-${var.name}"
   monitor_type      = "DIMENSIONAL"
   monitor_dimension = "SERVICE"
@@ -16,7 +16,7 @@ resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
 
 resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
   # Each linked account monitor only supports 10 accounts. This creates extra monitors if there are more than 10 accounts
-  count        = var.multi_account ? ceil(length(var.accounts)/10) : 0
+  count        = local.multi_account ? ceil(length(var.accounts)/10) : 0
   name         = "LINKED-ACCOUNT-${var.name}-${count.index}"
   monitor_type = "CUSTOM"
   monitor_specification = jsonencode(
@@ -35,16 +35,10 @@ resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
     }
   )
   tags = var.tags
-  lifecycle {
-    precondition {
-      condition     = length(var.accounts) > 0
-      error_message = "If multi_account is true, accounts can't be empty"
-    }
-  }
 }
 
 resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
-  name = "${var.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[0].name : aws_ce_anomaly_monitor.service_anomaly_monitor[0].name}-subscription"
+  name = "${local.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[0].name : aws_ce_anomaly_monitor.service_anomaly_monitor[0].name}-subscription"
   threshold_expression {
     dimension {
       key           = var.threshold_type
@@ -55,7 +49,7 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
 
   frequency = "IMMEDIATE" # required for alerts sent to SNS
 
-  monitor_arn_list = var.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[*].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[*].arn  
+  monitor_arn_list = local.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[*].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[*].arn  
 
   subscriber {
     type    = "SNS"

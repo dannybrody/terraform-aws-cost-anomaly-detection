@@ -47,13 +47,7 @@ variable "sns_topic_arn" {
 }
 
 variable "accounts" {
-  description = "List of AWS accounts to monitor. Required if multi_account=true"
+  description = "List of AWS accounts to monitor. Use it when deploying the module on the root account of an organization"
   type        = list(string)
   default     = []
-}
-
-variable "multi_account" {
-  description = "true if multiple accounts should be monitored. In which case the solution must be deployed on the root account of a CT deployment"
-  type        = bool
-  default     = true
 }

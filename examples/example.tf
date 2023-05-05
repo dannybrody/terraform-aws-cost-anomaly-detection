@@ -25,8 +25,6 @@ module "service_cost_anomaly_detector" {
   threshold_type     = "ANOMALY_TOTAL_IMPACT_PERCENTAGE"
   slack_channel_id   = var.slack_channel_id
   slack_workspace_id = var.slack_workspace_id
-  multi_account = false
-  sns_topic_arn = module.multi_account_cost_anomaly_detector.sns_topic_arn
 
   tags = {
     key                = "value"
