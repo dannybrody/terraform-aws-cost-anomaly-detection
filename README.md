@@ -4,10 +4,14 @@ It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and
 
 **AWS Cost Anomaly Monitor** Monitors the AWS account for unexpected costs. This module uses AWS' recommended configuration to evaluate each of the services you use individually, allowing smaller anomalies to be detected. Anomaly thresholds are automatically adjusted based on your historical service spend patterns.
 
-**Cost Anomaly Subscription** send an alert to SNS when cost monitor detects an anomaly and a threshold is exceeded. The threshold is configurable and it can be a fixed amount or a percentage.
+**Cost Anomaly Subscription** sends an alert to SNS when cost monitor detects an anomaly and a threshold is exceeded. The threshold is configurable and it can be a fixed amount or a percentage.
 
 ![diagram](docs/images/cost_monitor_diagram.png "diagram")
 
+## Deployment options
+ * AWS recommendation is to use a _Service Monitor_ which analizes the cost paterns of a single account and alerts when unexpected cost in any service is found. In such case, this module needs to be instantiated and deployed separately on each of the accounts that need to be monitored leaving the _accounts_ variable empty **This is the deployment recommended by AWS.**
+
+* It is possible to monitor all the member accounts of and AWS Organization, however, it's less granular, therefore less likely to find unexpected cost patterns. In this case, deploy this module on the root account and use the variable _accounts_ in order to define which accounts should be monitored. 
 
 ## Before starting follow these steps to allow AWS to access your slack workspace
 
@@ -63,7 +67,6 @@ No modules.
 | [aws_iam_role.chatbot_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.chatbot_role_attachement](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_sns_topic.cost_anomaly_topic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
-| [aws_sns_topic_policy.sns_topic_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_policy) | resource |
 | [awscc_chatbot_slack_channel_configuration.chatbot_slack_channel](https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/chatbot_slack_channel_configuration) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.chatbot_assume_role_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -75,10 +78,9 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_accounts"></a> [accounts](#input\_accounts) | List of AWS accounts to monitor. Required if multi\_account=true | `list(string)` | `[]` | no |
+| <a name="input_accounts"></a> [accounts](#input\_accounts) | List of AWS accounts to monitor. Use it when deploying the module on the root account of an organization | `list(string)` | `[]` | no |
 | <a name="input_alert_threshold"></a> [alert\_threshold](#input\_alert\_threshold) | Defines the value to trigger an alert. Depending on the value chosen for the threshold\_type variable, it will represent a percentage or an absolute ammount of money | `number` | n/a | yes |
-| <a name="input_enable_slack_integration"></a> [enable\_slack\_integration](#input\_enable\_slack\_integration) | Set to false if slack integration is not needed and another subscriber to the SNS topic is preffered | `bool` | `true` | no |
-| <a name="input_multi_account"></a> [multi\_account](#input\_multi\_account) | true if multiple accounts should be monitored. In which case the solution must be deployed on the root account of a CT deployment | `bool` | `true` | no |
+| <a name="input_enable_slack_integration"></a> [enable\_slack\_integration](#input\_enable\_slack\_integration) | Set to false if slack integration is not needed and another subscriber to the SNS topic is preferred | `bool` | `true` | no |
 | <a name="input_name"></a> [name](#input\_name) | name for the monitors, topic, etc | `string` | `"cost-Anomaly-monitor"` | no |
 | <a name="input_slack_channel_id"></a> [slack\_channel\_id](#input\_slack\_channel\_id) | right click on the channel name, copy channel URL, and use the letters and number after the last / | `string` | n/a | yes |
 | <a name="input_slack_workspace_id"></a> [slack\_workspace\_id](#input\_slack\_workspace\_id) | ID of your slack slack\_workspace\_id | `string` | n/a | yes |
