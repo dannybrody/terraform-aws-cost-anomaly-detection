@@ -3,7 +3,7 @@ output "sns_topic_arn" {
 }
 
 output "anomaly_monitor_arn" {
-  value = var.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[0].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[0].arn
+  value = local.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[0].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[0].arn
 }
 
 output "anomaly_subscription_arn" {
