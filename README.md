@@ -9,9 +9,9 @@ It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and
 ![diagram](docs/images/cost_monitor_diagram.png "diagram")
 
 ## Deployment options
-AWS recommendation is to use a _Service Monitor_ which analizes the cost paterns of a single account and alerts when unexpected cost in any service is found. In such case, this module needs to be instantiated and deployed separately on each of the accounts that need to be monitored. **This is the deployment recommended by AWS.**
+ * AWS recommendation is to use a _Service Monitor_ which analizes the cost paterns of a single account and alerts when unexpected cost in any service is found. In such case, this module needs to be instantiated and deployed separately on each of the accounts that need to be monitored leaving the _accounts_ variable empty **This is the deployment recommended by AWS.**
 
-It is possible to monitor all the member accounts of and AWS Organization, however, it's less granular, therefore less likely to find unexpected cost patterns. In this case, deploy this module on the root account and use the variable _accounts_ in order to define which accounts should be monitored. 
+* It is possible to monitor all the member accounts of and AWS Organization, however, it's less granular, therefore less likely to find unexpected cost patterns. In this case, deploy this module on the root account and use the variable _accounts_ in order to define which accounts should be monitored. 
 
 ## Before starting follow these steps to allow AWS to access your slack workspace
 
