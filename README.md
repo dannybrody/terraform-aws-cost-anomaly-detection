@@ -1,6 +1,6 @@
 # Cost anomaly detection and alerting
 This module leverages [AWS Cost Anomaly Detector](https://aws.amazon.com/aws-cost-management/aws-cost-anomaly-detection/) to identify unusual cost patterns in AWS and notify them immediately.
-It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and optionally a slack channel configuration on AWS ChatBot.
+It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and optionally a slack channel configuration on AWS ChatBot. It also will optionally deploy Lambda function that will run weekly and will report the current forecasted cost of the account, last month's cost and the variation percent.
 
 **AWS Cost Anomaly Monitor** Monitors the AWS account for unexpected costs. This module uses AWS' recommended configuration to evaluate each of the services you use individually, allowing smaller anomalies to be detected. Anomaly thresholds are automatically adjusted based on your historical service spend patterns.
 
@@ -12,6 +12,8 @@ It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and
  * AWS recommendation is to use a _Service Monitor_ which analizes the cost paterns of a single account and alerts when unexpected cost in any service is found. In such case, this module needs to be instantiated and deployed separately on each of the accounts that need to be monitored leaving the _accounts_ variable empty **This is the deployment recommended by AWS.**
 
 * It is possible to monitor all the member accounts of and AWS Organization, however, it's less granular, therefore less likely to find unexpected cost patterns. In this case, deploy this module on the root account and use the variable _accounts_ in order to define which accounts should be monitored. 
+
+* **Recommended deployment**: In an environment with Control Tower enabled, instantiate this module individually on each of the main accounts, such as sandbox, staging, and production. In each deployment, do not use the _" variable so that the monitors only focus on the account and do not deploy the lambda using the _deploy lambda_ variable. On the root/main account, instantiate the module using the _accounts_ variable, include the account number of every AWS account in your organization and deploy the Lambda. This way, you'll have granular monitoring at the service level on the accounts you consider more important, monitoring at the account level using the root account, and the lambda reporting the forecasted cost of the main account. Refer to the examples folder for more information.
 
 ## Before starting follow these steps to allow AWS to access your slack workspace
 
