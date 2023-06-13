@@ -168,7 +168,7 @@ resource "null_resource" "pip_installation" {
   count = local.deploy_lambda
   provisioner "local-exec" {
     command = <<EOF
-        pip3 install --target ${abspath(path.root)}/lambda/ -r ${abspath(path.root)}/lambda/requirements.txt
+        pip3 install --target ${abspath(path.module)}/lambda/ -r ${abspath(path.module)}/lambda/requirements.txt
         EOF 
   }
 }
