@@ -1,6 +1,6 @@
 # Cost anomaly detection and alerting
 This module leverages [AWS Cost Anomaly Detector](https://aws.amazon.com/aws-cost-management/aws-cost-anomaly-detection/) to identify unusual cost patterns in AWS and notify them immediately.
-It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and optionally a slack channel configuration on AWS ChatBot. It also will optionally deploy Lambda function that will run weekly and will report the current forecasted cost of the account, last month's cost and the variation percent.
+It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and optionally a slack channel configuration on AWS ChatBot. It also will optionally deploy Lambda function that will run weekly and will report the current forecasted cost of the account, last month's cost and the variation percent. This lambda is set by default to run every Monday at 9:00 AM ET. However it can be configured by either using cron or rate sintax.
 
 **AWS Cost Anomaly Monitor** Monitors the AWS account for unexpected costs. This module uses AWS' recommended configuration to evaluate each of the services you use individually, allowing smaller anomalies to be detected. Anomaly thresholds are automatically adjusted based on your historical service spend patterns.
 
