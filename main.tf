@@ -16,7 +16,7 @@ resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
 
 resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
   # Each linked account monitor only supports 10 accounts. This creates extra monitors if there are more than 10 accounts
-  count        = local.multi_account ? ceil(length(var.accounts)/10) : 0
+  count        = local.multi_account ? ceil(length(var.accounts) / 10) : 0
   name         = "LINKED-ACCOUNT-${var.name}-${count.index}"
   monitor_type = "CUSTOM"
   monitor_specification = jsonencode(
@@ -49,7 +49,7 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
 
   frequency = "IMMEDIATE" # required for alerts sent to SNS
 
-  monitor_arn_list = local.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[*].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[*].arn  
+  monitor_arn_list = local.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[*].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[*].arn
 
   subscriber {
     type    = "SNS"
@@ -110,4 +110,65 @@ resource "aws_iam_role_policy_attachment" "chatbot_role_attachement" {
   count      = local.slack_integration
   role       = aws_iam_role.chatbot_role[0].name
   policy_arn = aws_iam_policy.chatbot_channel_policy[0].arn
+}
+
+resource "aws_lambda_function" "cost_alert" {
+  count            = local.deploy_lambda
+  function_name    = var.name
+  role             = aws_iam_role.iam_for_lambda[0].arn
+  filename         = data.archive_file.lambda_deployment_package.output_path
+  handler          = "main.lambda_handler"
+  runtime          = "python3.9"
+  source_code_hash = data.archive_file.lambda_deployment_package.output_base64sha256
+  environment {
+    variables = {
+      "SNS_TOPIC_ARN" = var.sns_topic_arn != "" ? var.sns_topic_arn : aws_sns_topic.cost_anomaly_topic[0].arn # Do not change the key. It's used by the lambda
+    }
+  }
+}
+
+#
+resource "aws_iam_role" "iam_for_lambda" {
+  count              = local.deploy_lambda
+  name               = "${var.name}-lambda-role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+  path               = "/service-role/"
+
+  inline_policy {
+    name   = "read-only-cost-and-usage"
+    policy = data.aws_iam_policy_document.inline_policy.json
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "lambda_trigger" {
+  count       = local.deploy_lambda
+  name        = "${var.name}-trigger"
+  description = "${var.name}-trigger"
+
+  schedule_expression = var.lambda_frequency
+}
+
+resource "aws_cloudwatch_event_target" "event_target" {
+  count     = local.deploy_lambda
+  rule      = aws_cloudwatch_event_rule.lambda_trigger[0].name
+  target_id = "TriggerLambda"
+  arn       = aws_lambda_function.cost_alert[0].arn
+}
+
+resource "aws_lambda_permission" "allow_events_bridge_to_run_lambda" {
+  count         = local.deploy_lambda
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.cost_alert[0].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.lambda_trigger[0].arn
+}
+
+resource "null_resource" "pip_installation" {
+  count = local.deploy_lambda
+  provisioner "local-exec" {
+    command = <<EOF
+        pip3 install --target ../lambda/ -r ../lambda/requirements.txt
+        EOF 
+  }
 }
