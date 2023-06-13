@@ -112,7 +112,7 @@ resource "aws_iam_role_policy_attachment" "chatbot_role_attachement" {
   policy_arn = aws_iam_policy.chatbot_channel_policy[0].arn
 }
 
-resource "aws_lambda_function" "cost_alert" {
+resource "aws_lambda_function" "cost_report" {
   count            = local.deploy_lambda
   function_name    = var.name
   role             = aws_iam_role.iam_for_lambda[0].arn
@@ -152,14 +152,14 @@ resource "aws_cloudwatch_event_target" "event_target" {
   count     = local.deploy_lambda
   rule      = aws_cloudwatch_event_rule.lambda_trigger[0].name
   target_id = "TriggerLambda"
-  arn       = aws_lambda_function.cost_alert[0].arn
+  arn       = aws_lambda_function.cost_report[0].arn
 }
 
 resource "aws_lambda_permission" "allow_events_bridge_to_run_lambda" {
   count         = local.deploy_lambda
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.cost_alert[0].function_name
+  function_name = aws_lambda_function.cost_report[0].function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.lambda_trigger[0].arn
 }
@@ -168,7 +168,7 @@ resource "null_resource" "pip_installation" {
   count = local.deploy_lambda
   provisioner "local-exec" {
     command = <<EOF
-        pip3 install --target ../lambda/ -r ../lambda/requirements.txt
+        pip3 install --target lambda/ -r lambda/requirements.txt
         EOF 
   }
 }
