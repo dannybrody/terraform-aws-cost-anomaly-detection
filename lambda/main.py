@@ -124,18 +124,18 @@ def lambda_handler(event, context):
     sns_topic_arn = environ.get('SNS_TOPIC_ARN')
     previous_month_cost, forecasted_cost, percent = get_cost()
     msg = {
-            "version": "0",
-            "id": generate_msg_id(),
-            "detail-type": "AWS COST REPORT",
-            "source": "aws.events",
-            "account": account_id,
-            "time": formatted_datetime,
-            "region": session.region_name,
-            "resources": [
-                f"Previous month: ${previous_month_cost}",
-                f"Current month forecast: ${forecasted_cost}",
-                f"Forecast Percent: {percent}%",
+            'version': '0',
+            'id': generate_msg_id(),
+            'detail-type': 'AWS COST REPORT',
+            'source': 'aws.events',
+            'account': account_id,
+            'time': formatted_datetime,
+            'region': session.region_name,
+            'resources': [
+                f'Previous month: ${previous_month_cost}',
+                f'Current month forecast: ${forecasted_cost}',
+                f'Forecast Percent: {percent}%',
             ],
-            "detail": {}
+            'detail': {}
             }
     send_message_to_chatbot(sns_topic_arn, msg)
