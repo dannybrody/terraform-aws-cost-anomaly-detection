@@ -119,8 +119,8 @@ def lambda_handler(event, context):
     now = datetime.now()
     # Format the datetime object as a string
     formatted_datetime = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-    sts = session.client("sts")
-    account_id = sts.get_caller_identity()["Account"]
+    region = environ.get('REGION')
+    account_id = environ.get('ACCOUNT_ID')
     sns_topic_arn = environ.get('SNS_TOPIC_ARN')
     previous_month_cost, forecasted_cost, percent = get_cost()
     msg = {
