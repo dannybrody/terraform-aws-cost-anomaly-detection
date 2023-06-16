@@ -37,20 +37,7 @@ data "aws_iam_policy_document" "chatbot_assume_role_policy" {
   }
 }
 
-data "aws_iam_policy_document" "assume_role" {
-  statement {
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-
-    actions = ["sts:AssumeRole"]
-  }
-}
-
-data "aws_iam_policy_document" "inline_policy" {
+data "aws_iam_policy_document" "lambda_policy" {
 
   statement {
     actions = [
@@ -85,12 +72,4 @@ data "aws_iam_policy_document" "inline_policy" {
       var.sns_topic_arn != "" ? var.sns_topic_arn : aws_sns_topic.cost_anomaly_topic[0].arn
     ]
   }
-}
-
-data "archive_file" "lambda_deployment_package" {
-  depends_on       = [null_resource.pip_installation]
-  type             = "zip"
-  source_dir       = "${path.module}/lambda"
-  output_path      = "${path.module}/cost_monitor.zip"
-  output_file_mode = "0666"
 }
