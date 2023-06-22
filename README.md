@@ -17,7 +17,7 @@ It also will optionally deploy Lambda function that will run weekly and will rep
 * **Recommended deployment**: In an environment with Control Tower enabled, instantiate this module individually on each of the main accounts, such as sandbox, staging, and production. In each deployment, do not use the _accounts_ variable so that the monitors only focus on the account and do not deploy the lambda using the _deploy lambda_ variable. On the root/main account, instantiate the module using the _accounts_ variable, include the account number of every AWS account in your organization and deploy the Lambda. This way, you'll have granular monitoring at the service level on the accounts you consider more important, monitoring at the account level using the root account, and the lambda reporting the forecasted cost of the main account. Refer to the examples folder for more information.
 
 ## Cost
-The Cost Anomaly Detection service does not has a cost by itself. However, it sends its findings to SNS which has a cost of few cents per million messages.
+The Cost Anomaly Detection service does not have a cost by itself. However, it sends its findings to SNS which has a cost of few cents per million messages.
 If the Lambda function is deployed, on each execution it will make 3 calls to the Cost Explorer API, which has a cost of 1 cent per call.
 **Conclusion:** The cost of running this solution is quite low, however not zero.
 
