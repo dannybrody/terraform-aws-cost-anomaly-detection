@@ -1,6 +1,7 @@
 # Cost anomaly detection and alerting
 This module leverages [AWS Cost Anomaly Detector](https://aws.amazon.com/aws-cost-management/aws-cost-anomaly-detection/) to identify unusual cost patterns in AWS and notify them immediately.
-It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and optionally a slack channel configuration on AWS ChatBot. It also will optionally deploy Lambda function that will run weekly and will report the current forecasted cost of the account, last month's cost and the variation percent. This lambda is set by default to run every Monday at 9:00 AM ET. However it can be configured by either using cron or rate sintax.
+It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and optionally a slack channel configuration on AWS ChatBot. 
+It also will optionally deploy Lambda function that will run weekly and will report the current forecasted cost of the account, last month's cost and the variation percent. This lambda is set by default to run every Monday at 9:00 AM ET. However it can be configured by either using cron or rate sintax.
 
 **AWS Cost Anomaly Monitor** Monitors the AWS account for unexpected costs. This module uses AWS' recommended configuration to evaluate each of the services you use individually, allowing smaller anomalies to be detected. Anomaly thresholds are automatically adjusted based on your historical service spend patterns.
 
@@ -14,6 +15,11 @@ It creates a Cost Anomaly Monitor, a Cost Anomaly Subscription, a SNS topic, and
 * It is possible to monitor all the member accounts of and AWS Organization, however, it's less granular, therefore less likely to find unexpected cost patterns. In this case, deploy this module on the root account and use the variable _accounts_ in order to define which accounts should be monitored. 
 
 * **Recommended deployment**: In an environment with Control Tower enabled, instantiate this module individually on each of the main accounts, such as sandbox, staging, and production. In each deployment, do not use the _accounts_ variable so that the monitors only focus on the account and do not deploy the lambda using the _deploy lambda_ variable. On the root/main account, instantiate the module using the _accounts_ variable, include the account number of every AWS account in your organization and deploy the Lambda. This way, you'll have granular monitoring at the service level on the accounts you consider more important, monitoring at the account level using the root account, and the lambda reporting the forecasted cost of the main account. Refer to the examples folder for more information.
+
+## Cost
+The Cost Anomaly Detection service does not has a cost by itself. However, it sends its findings to SNS which has a cost of few cents per million messages.
+If the Lambda function is deployed, on each execution it will make 3 calls to the Cost Explorer API, which has a cost of 1 cent per call.
+**Conclusion:** The cost of running this solution is quite low, however not zero.
 
 ## Before starting follow these steps to allow AWS to access your slack workspace
 
@@ -44,21 +50,23 @@ Once this is done, Terraform can be applied to create the alerts, subscriptions,
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.1 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 4.60 |
+| <a name="requirement_archive"></a> [archive](#requirement\_archive) | 2.4.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 4.63 |
 | <a name="requirement_awscc"></a> [awscc](#requirement\_awscc) | ~>0.48 |
+| <a name="requirement_null"></a> [null](#requirement\_null) | 3.2.1 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_archive"></a> [archive](#provider\_archive) | n/a |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 4.60 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 4.63 |
 | <a name="provider_awscc"></a> [awscc](#provider\_awscc) | ~>0.48 |
-| <a name="provider_null"></a> [null](#provider\_null) | n/a |
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_lambda"></a> [lambda](#module\_lambda) | terraform-aws-modules/lambda/aws | 5.0.0 |
 
 ## Resources
 
@@ -71,19 +79,14 @@ No modules.
 | [aws_cloudwatch_event_target.event_target](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
 | [aws_iam_policy.chatbot_channel_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.chatbot_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.iam_for_lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.chatbot_role_attachement](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_lambda_function.cost_alert](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
 | [aws_lambda_permission.allow_events_bridge_to_run_lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
 | [aws_sns_topic.cost_anomaly_topic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
 | [awscc_chatbot_slack_channel_configuration.chatbot_slack_channel](https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/chatbot_slack_channel_configuration) | resource |
-| [null_resource.pip_installation](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [archive_file.lambda_deployment_package](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
-| [aws_iam_policy_document.assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.chatbot_assume_role_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.chatbot_channel_policy_document](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.inline_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.lambda_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.sns_topic_policy_document](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
@@ -96,7 +99,7 @@ No modules.
 | <a name="input_deploy_lambda"></a> [deploy\_lambda](#input\_deploy\_lambda) | flag to choose if the lambda will be deployed or not | `bool` | `true` | no |
 | <a name="input_enable_slack_integration"></a> [enable\_slack\_integration](#input\_enable\_slack\_integration) | Set to false if slack integration is not needed and another subscriber to the SNS topic is preferred | `bool` | `true` | no |
 | <a name="input_lambda_frequency"></a> [lambda\_frequency](#input\_lambda\_frequency) | Frequency to run the lambda (cron formating is also accepted) | `string` | `"cron(0 13 ? * MON *)"` | no |
-| <a name="input_name"></a> [name](#input\_name) | name for the monitors, topic, etc | `string` | `"cost-Anomaly-monitor"` | no |
+| <a name="input_name"></a> [name](#input\_name) | name for the monitors, topic, etc | `string` | `"cost-anomaly-monitor"` | no |
 | <a name="input_slack_channel_id"></a> [slack\_channel\_id](#input\_slack\_channel\_id) | right click on the channel name, copy channel URL, and use the letters and number after the last / | `string` | n/a | yes |
 | <a name="input_slack_workspace_id"></a> [slack\_workspace\_id](#input\_slack\_workspace\_id) | ID of your slack slack\_workspace\_id | `string` | n/a | yes |
 | <a name="input_sns_topic_arn"></a> [sns\_topic\_arn](#input\_sns\_topic\_arn) | ARN of an already existing SNS topic to send alerts. If a value is provided, the module will not create a SNS topic | `string` | `""` | no |

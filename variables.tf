@@ -37,7 +37,7 @@ variable "tags" {
 variable "name" {
   description = "name for the monitors, topic, etc"
   type        = string
-  default     = "cost-Anomaly-monitor"
+  default     = "cost-anomaly-monitor"
 }
 
 variable "sns_topic_arn" {

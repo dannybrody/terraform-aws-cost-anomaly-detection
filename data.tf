@@ -73,3 +73,26 @@ data "aws_iam_policy_document" "lambda_policy" {
     ]
   }
 }
+
+data "aws_iam_policy_document" "chatbot_channel_policy_document" {
+  statement {
+    actions = [
+      "sns:ListSubscriptionsByTopic",
+      "sns:ListTopics",
+      "sns:Unsubscribe",
+      "sns:Subscribe",
+      "sns:ListSubscriptions"
+    ]
+    resources = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[0].arn : var.sns_topic_arn]
+  }
+  statement {
+    actions = [
+      "logs:PutLogEvents",
+      "logs:CreateLogStream",
+      "logs:DescribeLogStreams",
+      "logs:CreateLogGroup",
+      "logs:DescribeLogGroups"
+    ]
+    resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/chatbot/*"]
+  }
+}

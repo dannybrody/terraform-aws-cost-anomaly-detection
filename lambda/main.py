@@ -1,12 +1,10 @@
+import boto3
 import uuid
 import random
 import string
-import boto3
 import calendar
-import pytz
 import logging
 import json
-from slack_sdk.webhook import WebhookClient
 from datetime import date, timedelta, datetime
 from os import environ
 
@@ -40,23 +38,22 @@ def get_cost():
     Calculates percentual increase/decrease of cost comparing current month forecast with previous month cost.
     """
     logger.info('Calculating cost')
-    utc = pytz.UTC
-    today = datetime.now(utc)
+    today = datetime.now()
     
-    # this month
-    last_day = calendar.monthrange(today.year, today.month)[1]
-    month_end = date(today.year, today.month, last_day)
+    # current month
+    first_day_current_month = date(today.year, today.month, 1)
+    last_day_current_month = date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
     
-    # last month
-    last_month_end = date(today.year, today.month, 1) - timedelta(days=1)
-    last_month_start = date(last_month_end.year, last_month_end.month, 1)
+    # previous month
+    last_day_previous_month = today - timedelta(days=today.day)
+    first_day_previous_month = date(last_day_previous_month.year, last_day_previous_month.month, 1)
     today = date(today.year, today.month, today.day)
 
     client = session.client('ce')
     response = client.get_cost_and_usage(
         TimePeriod={
-            'Start': str(last_month_start),
-            'End': str(last_month_end)
+            'Start': str(first_day_previous_month),
+            'End': str(first_day_current_month) # End date is exclusive. Must use current month first day
         },
         Granularity='MONTHLY',
         Metrics=[
@@ -64,23 +61,42 @@ def get_cost():
         ],
     )
 
-    logger.info(f'last month start: {last_month_start}, last month end: {last_month_end}')
+    logger.info(f'last month start: {first_day_previous_month}, last month end: {first_day_current_month}')
 
     previous_month_cost = float(response['ResultsByTime'][0]['Total']['UnblendedCost']['Amount'])
-    
+
     logger.info(f'previous month:{previous_month_cost}')
+
+    response = client.get_cost_and_usage(
+        TimePeriod={
+            'Start': str(first_day_current_month),
+            'End': str(today)
+        },
+        Granularity='MONTHLY',
+        Metrics=[
+            'UnblendedCost',
+        ],
+    )
+
+    logger.info(f'last month start: {first_day_previous_month}, last month end: {last_day_previous_month}')
+
+    current_month_cost = float(response['ResultsByTime'][0]['Total']['UnblendedCost']['Amount'])
     
+    logger.info(f'Current month:{current_month_cost}')
+    
+    # Forecast by the end of current month
+
     # By the end of the month, do a forecast between that day and the next one (1st day of next month)
     # to avoid api validation errors
-    if today == month_end:
-        month_end = month_end + timedelta(days=1)
+    if today == last_day_current_month:
+        last_day_current_month = last_day_current_month + timedelta(days=1)
 
-    logger.info(f'Today: {today}, month end: {month_end}')
+    logger.info(f'Today: {today}, month end: {last_day_current_month}')
 
     response = client.get_cost_forecast(
         TimePeriod={
             'Start': str(today),
-            'End': str(month_end)
+            'End': str(last_day_current_month)
         },
         Metric='UNBLENDED_COST',
         Granularity='MONTHLY'
@@ -88,10 +104,8 @@ def get_cost():
 
     forecasted_cost = float(response['Total']['Amount'])
     logger.info(f'Forecasted cost: {forecasted_cost}')
-    percent = forecasted_cost/previous_month_cost * 100
-    logger.info(f'Calculated percent: {percent}')
-
-    return round(previous_month_cost, 2), round(forecasted_cost, 2), round(percent, 2)
+    
+    return previous_month_cost, current_month_cost, forecasted_cost
 
 
 def send_message_to_chatbot(topic_arn, message):
@@ -111,31 +125,47 @@ def send_message_to_chatbot(topic_arn, message):
     )
     logger.info(f'Response: {response}')
 
+def message(previous, current, forecast):
+    """
+    craft the message that will be sent to SNS
+    """
+    now = datetime.now()
+    up_down = "Up"
+    previous = round(previous, 2)
+    current = round(current, 2)
+    forecast = round(forecast, 2)
+    percent = int(abs(forecast/previous -1) * 100)
+    
+    if forecast < previous:
+        up_down = "Down"
+    
+    msg = {
+        "version": "0",
+        "id": generate_msg_id(),
+        "account": environ.get('ACCOUNT_ID'),
+        "time": now.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "region": environ.get('REGION'),
+        "source": "aws.health",
+        "detail-type": "AWS Health Event",
+        "resources": [],
+        "detail": {
+        "eventDescription": [{
+            "language": "en_US",
+            "latestDescription": f'''AWS COST REPORT:
+                Previous month cost: ${previous}
+                Current month cost: ${current}
+                Current month forecast: ${forecast}
+                {up_down} {percent}% over last month'''
+            }]
+        }
+    }
+    return msg
 
 def lambda_handler(event, context):
     """
     AWS lambda main function
     """
-    now = datetime.now()
-    # Format the datetime object as a string
-    formatted_datetime = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-    region = environ.get('REGION')
-    account_id = environ.get('ACCOUNT_ID')
-    sns_topic_arn = environ.get('SNS_TOPIC_ARN')
-    previous_month_cost, forecasted_cost, percent = get_cost()
-    msg = {
-            'version': '0',
-            'id': generate_msg_id(),
-            'detail-type': 'AWS COST REPORT',
-            'source': 'aws.events',
-            'account': account_id,
-            'time': formatted_datetime,
-            'region': session.region_name,
-            'resources': [
-                f'Previous month: ${previous_month_cost}',
-                f'Current month forecast: ${forecasted_cost}',
-                f'Forecast Percent: {percent}%',
-            ],
-            'detail': {}
-            }
-    send_message_to_chatbot(sns_topic_arn, msg)
+    logger.info('Main handler start')
+    previous_month_cost, current_month_cost, forecasted_cost = get_cost()
+    send_message_to_chatbot(environ.get('SNS_TOPIC_ARN'), message(previous_month_cost, current_month_cost, forecasted_cost))
+    logger.info('Main handler end')

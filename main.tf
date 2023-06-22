@@ -70,29 +70,6 @@ resource "awscc_chatbot_slack_channel_configuration" "chatbot_slack_channel" {
   sns_topic_arns     = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[count.index].arn : var.sns_topic_arn]
 }
 
-data "aws_iam_policy_document" "chatbot_channel_policy_document" {
-  statement {
-    actions = [
-      "sns:ListSubscriptionsByTopic",
-      "sns:ListTopics",
-      "sns:Unsubscribe",
-      "sns:Subscribe",
-      "sns:ListSubscriptions"
-    ]
-    resources = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[0].arn : var.sns_topic_arn]
-  }
-  statement {
-    actions = [
-      "logs:PutLogEvents",
-      "logs:CreateLogStream",
-      "logs:DescribeLogStreams",
-      "logs:CreateLogGroup",
-      "logs:DescribeLogGroups"
-    ]
-    resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/chatbot/*"]
-  }
-}
-
 resource "aws_iam_policy" "chatbot_channel_policy" {
   count  = local.slack_integration
   name   = "${var.name}-channel-policy"
@@ -144,8 +121,7 @@ module "lambda" {
   description   = "report current and forecast cost"
   handler       = "main.lambda_handler"
   runtime       = "python3.9"
-  build_in_docker = true
-  source_path = "${abspath(path.module)}/lambda"
+  source_path   = "${path.module}/lambda/main.py"
   attach_policy_json = true
   policy_json = data.aws_iam_policy_document.lambda_policy.json
   environment_variables = {
