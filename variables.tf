@@ -37,7 +37,7 @@ variable "tags" {
 variable "name" {
   description = "name for the monitors, topic, etc"
   type        = string
-  default     = "cost-Anomaly-monitor"
+  default     = "cost-anomaly-monitor"
 }
 
 variable "sns_topic_arn" {
@@ -50,4 +50,16 @@ variable "accounts" {
   description = "List of AWS accounts to monitor. Use it when deploying the module on the root account of an organization"
   type        = list(string)
   default     = []
+}
+
+variable "deploy_lambda" {
+  description = "flag to choose if the lambda will be deployed or not"
+  type        = bool
+  default     = true
+}
+
+variable "lambda_frequency" {
+  description = "Frequency to run the lambda (cron formating is also accepted)"
+  type        = string
+  default     = "cron(0 13 ? * MON *)" # defaults to Mondays 9:00 am ET (13 UTC)
 }

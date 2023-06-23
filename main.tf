@@ -16,7 +16,7 @@ resource "aws_ce_anomaly_monitor" "service_anomaly_monitor" {
 
 resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
   # Each linked account monitor only supports 10 accounts. This creates extra monitors if there are more than 10 accounts
-  count        = local.multi_account ? ceil(length(var.accounts)/10) : 0
+  count        = local.multi_account ? ceil(length(var.accounts) / 10) : 0
   name         = "LINKED-ACCOUNT-${var.name}-${count.index}"
   monitor_type = "CUSTOM"
   monitor_specification = jsonencode(
@@ -49,7 +49,7 @@ resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
 
   frequency = "IMMEDIATE" # required for alerts sent to SNS
 
-  monitor_arn_list = local.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[*].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[*].arn  
+  monitor_arn_list = local.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[*].arn : aws_ce_anomaly_monitor.service_anomaly_monitor[*].arn
 
   subscriber {
     type    = "SNS"
@@ -70,29 +70,6 @@ resource "awscc_chatbot_slack_channel_configuration" "chatbot_slack_channel" {
   sns_topic_arns     = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[count.index].arn : var.sns_topic_arn]
 }
 
-data "aws_iam_policy_document" "chatbot_channel_policy_document" {
-  statement {
-    actions = [
-      "sns:ListSubscriptionsByTopic",
-      "sns:ListTopics",
-      "sns:Unsubscribe",
-      "sns:Subscribe",
-      "sns:ListSubscriptions"
-    ]
-    resources = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[0].arn : var.sns_topic_arn]
-  }
-  statement {
-    actions = [
-      "logs:PutLogEvents",
-      "logs:CreateLogStream",
-      "logs:DescribeLogStreams",
-      "logs:CreateLogGroup",
-      "logs:DescribeLogGroups"
-    ]
-    resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/chatbot/*"]
-  }
-}
-
 resource "aws_iam_policy" "chatbot_channel_policy" {
   count  = local.slack_integration
   name   = "${var.name}-channel-policy"
@@ -110,4 +87,46 @@ resource "aws_iam_role_policy_attachment" "chatbot_role_attachement" {
   count      = local.slack_integration
   role       = aws_iam_role.chatbot_role[0].name
   policy_arn = aws_iam_policy.chatbot_channel_policy[0].arn
+}
+
+resource "aws_cloudwatch_event_rule" "lambda_trigger" {
+  count       = local.deploy_lambda
+  name        = "${var.name}-trigger"
+  description = "${var.name}-trigger"
+
+  schedule_expression = var.lambda_frequency
+}
+
+resource "aws_cloudwatch_event_target" "event_target" {
+  count     = local.deploy_lambda
+  rule      = aws_cloudwatch_event_rule.lambda_trigger[0].name
+  target_id = "TriggerLambda"
+  arn       = module.lambda[0].lambda_function_arn
+}
+
+resource "aws_lambda_permission" "allow_events_bridge_to_run_lambda" {
+  count         = local.deploy_lambda
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = module.lambda[0].lambda_function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.lambda_trigger[0].arn
+}
+
+module "lambda" {
+  count            = local.deploy_lambda
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "5.0.0"
+  function_name = "${var.name}-lambda"
+  description   = "report current and forecast cost"
+  handler       = "main.lambda_handler"
+  runtime       = "python3.9"
+  source_path   = "${path.module}/lambda/main.py"
+  attach_policy_json = true
+  policy_json = data.aws_iam_policy_document.lambda_policy.json
+  environment_variables = {
+    "SNS_TOPIC_ARN" = var.sns_topic_arn != "" ? var.sns_topic_arn : aws_sns_topic.cost_anomaly_topic[0].arn # Do not change the key. It's used by the lambda
+    "ACCOUNT_ID"    = data.aws_caller_identity.current.account_id
+    "REGION"        = data.aws_region.current.name
+  }
 }
