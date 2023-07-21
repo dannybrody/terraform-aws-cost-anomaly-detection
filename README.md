@@ -43,7 +43,6 @@ Example: https://app.slack.com/client/T01JK23AB/slack-connect (This is an exampl
 
 Once this is done, Terraform can be applied to create the alerts, subscriptions, SNS topic, and the configuration that maps the slack channel with the alerts.
 
-
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -55,6 +54,7 @@ Once this is done, Terraform can be applied to create the alerts, subscriptions,
 | <a name="requirement_awscc"></a> [awscc](#requirement\_awscc) | ~>0.48 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | 3.2.1 |
 
+In order to build the deployment package of the lambda function, access to python3 in the PATH is required.
 ## Providers
 
 | Name | Version |
