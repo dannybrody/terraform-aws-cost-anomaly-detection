@@ -54,7 +54,6 @@ Once this is done, Terraform can be applied to create the alerts, subscriptions,
 | <a name="requirement_awscc"></a> [awscc](#requirement\_awscc) | ~>0.48 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | 3.2.1 |
 
-In order to build the deployment package of the lambda function, access to python3 in the PATH is required.
 ## Providers
 
 | Name | Version |

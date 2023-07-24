@@ -96,3 +96,23 @@ data "aws_iam_policy_document" "chatbot_channel_policy_document" {
     resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/chatbot/*"]
   }
 }
+
+data "archive_file" "lambda_deployment_package" {
+  type        = "zip"
+  source_dir = "${path.module}/lambda"
+  output_path = "${path.module}/cost_monitor.zip"
+  output_file_mode = "0666"
+}
+
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
