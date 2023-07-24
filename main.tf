@@ -101,32 +101,43 @@ resource "aws_cloudwatch_event_target" "event_target" {
   count     = local.deploy_lambda
   rule      = aws_cloudwatch_event_rule.lambda_trigger[0].name
   target_id = "TriggerLambda"
-  arn       = module.lambda[0].lambda_function_arn
+  arn       = aws_lambda_function.cost_alert[0].arn
 }
 
 resource "aws_lambda_permission" "allow_events_bridge_to_run_lambda" {
   count         = local.deploy_lambda
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
-  function_name = module.lambda[0].lambda_function_name
+  function_name = aws_lambda_function.cost_alert[0].arn
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.lambda_trigger[0].arn
 }
 
-module "lambda" {
+resource "aws_lambda_function" "cost_alert" {
   count            = local.deploy_lambda
-  source  = "terraform-aws-modules/lambda/aws"
-  version = "5.0.0"
-  function_name = "${var.name}-lambda"
-  description   = "report current and forecast cost"
-  handler       = "main.lambda_handler"
-  runtime       = "python3.9"
-  source_path   = "${path.module}/lambda/main.py"
-  attach_policy_json = true
-  policy_json = data.aws_iam_policy_document.lambda_policy.json
-  environment_variables = {
-    "SNS_TOPIC_ARN" = var.sns_topic_arn != "" ? var.sns_topic_arn : aws_sns_topic.cost_anomaly_topic[0].arn # Do not change the key. It's used by the lambda
-    "ACCOUNT_ID"    = data.aws_caller_identity.current.account_id
-    "REGION"        = data.aws_region.current.name
+  function_name    = var.name
+  role             = aws_iam_role.iam_for_lambda[0].arn
+  filename         = data.archive_file.lambda_deployment_package.output_path
+  handler          = "main.lambda_handler"
+  runtime          = "python3.9"
+  source_code_hash = data.archive_file.lambda_deployment_package.output_base64sha256
+  environment {
+    variables = {
+      "SNS_TOPIC_ARN" = var.sns_topic_arn != "" ? var.sns_topic_arn : aws_sns_topic.cost_anomaly_topic[0].arn # Do not change the key. It's used by the lambda
+      "ACCOUNT_ID"    = data.aws_caller_identity.current.account_id
+      "REGION"        = data.aws_region.current.name
+    }
+  }
+}
+
+resource "aws_iam_role" "iam_for_lambda" {
+  count              = local.deploy_lambda
+  name               = "${var.name}-lambda-role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+  path               = "/service-role/"
+
+  inline_policy {
+    name   = "read-only-cost-and-usage"
+    policy = data.aws_iam_policy_document.lambda_policy.json
   }
 }
