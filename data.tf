@@ -47,10 +47,9 @@ data "aws_iam_policy_document" "lambda_policy" {
       "ce:ListCostCategoryDefinitions",
       "ce:GetCostForecast"
     ]
-    resources = [
-      "arn:aws:ce:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/GetCostAndUsage",
-      "arn:aws:ce:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/GetCostForecast"
-    ]
+    # AWS recommendation to allow IAM users to use the AWS Cost Explorer API
+    # https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/billing-example-policies.html#example-policy-ce-api
+    resources = ["*"]
   }
 
   statement {
