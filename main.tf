@@ -121,6 +121,7 @@ resource "aws_lambda_function" "cost_alert" {
   handler          = "main.lambda_handler"
   runtime          = "python3.9"
   source_code_hash = data.archive_file.lambda_deployment_package.output_base64sha256
+  timeout          = var.lambda_timeout
   environment {
     variables = {
       "SNS_TOPIC_ARN" = var.sns_topic_arn != "" ? var.sns_topic_arn : aws_sns_topic.cost_anomaly_topic[0].arn # Do not change the key. It's used by the lambda

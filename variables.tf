@@ -63,3 +63,12 @@ variable "lambda_frequency" {
   type        = string
   default     = "cron(0 13 ? * MON *)" # defaults to Mondays 9:00 am ET (13 UTC)
 }
+variable "lambda_timeout" {
+  description = "maximum amount of time in seconds that the Lambda function can run"
+  type        = number
+  default     = 5
+  validation {
+    condition     = var.lambda_timeout > 0 && var.lambda_timeout <= 900
+    error_message = "timeout value must be higher than 0 seconds and lower or equal than 900 seconds (15 minutes)"
+  }
+}
