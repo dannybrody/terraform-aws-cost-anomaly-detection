@@ -5,6 +5,7 @@ import string
 import calendar
 import logging
 import json
+import threading
 from datetime import date, timedelta, datetime
 from os import environ
 
@@ -13,6 +14,11 @@ session = boto3.session.Session()
 # Get lambda default logger handler
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+previous_month_cost = 0
+current_month_cost = 0
+forecasted_cost = 0
+
 
 def generate_msg_id():
     """
@@ -32,81 +38,78 @@ def generate_msg_id():
 
     return random_string
 
+def calculate_cost(start_date, end_date, client, mode):
+    """
+    calculates costs, modifies global variables to allow the use of threads.
+    In order to use threads, the boto3 client must instantiated on the main thread and passed as a parameter
+    """
+    
+    logger.info(f'{mode} - start date: {start_date}, end date: {end_date}')
 
-def get_cost():
+    if mode == 'last_month' or mode == 'current_month':
+        response = client.get_cost_and_usage(
+        TimePeriod={
+            'Start': str(start_date),
+            'End': str(end_date) # End date is exclusive.
+            },
+            Granularity='MONTHLY',
+            Metrics=[
+                'UnblendedCost',
+            ],
+        )
+        
+        cost = float(response['ResultsByTime'][0]['Total']['UnblendedCost']['Amount'])
+
+        logger.info(f'{mode} - Cost:{cost}')
+        
+        if mode == 'last_month':
+            global previous_month_cost
+            previous_month_cost = cost
+        else:
+            global current_month_cost
+            current_month_cost = cost
+    
+    elif mode == 'forecast':
+        response = client.get_cost_forecast(
+        TimePeriod={
+            'Start': str(start_date),
+            'End': str(end_date)
+            },
+            Metric='UNBLENDED_COST',
+            Granularity='MONTHLY'
+        )
+
+        global forecasted_cost
+        forecasted_cost = float(response['Total']['Amount'])
+        logger.info(f'{mode} - Cost:{forecasted_cost}')
+    else:
+        raise Exception('mode parameter must be one of ["last_month", "current_month", "forecast"]')
+    
+
+def calculate_dates():
     """
     Calculates percentual increase/decrease of cost comparing current month forecast with previous month cost.
     """
     logger.info('Calculating cost')
     today = datetime.now()
+    threads = []
     
-    # current month
+    # current month dates
     first_day_current_month = date(today.year, today.month, 1)
     last_day_current_month = date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
     
-    # previous month
+    # previous month dates
     last_day_previous_month = today - timedelta(days=today.day)
     first_day_previous_month = date(last_day_previous_month.year, last_day_previous_month.month, 1)
     today = date(today.year, today.month, today.day)
 
-    client = session.client('ce')
-    response = client.get_cost_and_usage(
-        TimePeriod={
-            'Start': str(first_day_previous_month),
-            'End': str(first_day_current_month) # End date is exclusive. Must use current month first day
-        },
-        Granularity='MONTHLY',
-        Metrics=[
-            'UnblendedCost',
-        ],
-    )
-
-    logger.info(f'last month start: {first_day_previous_month}, last month end: {first_day_current_month}')
-
-    previous_month_cost = float(response['ResultsByTime'][0]['Total']['UnblendedCost']['Amount'])
-
-    logger.info(f'previous month:{previous_month_cost}')
-
-    response = client.get_cost_and_usage(
-        TimePeriod={
-            'Start': str(first_day_current_month),
-            'End': str(today)
-        },
-        Granularity='MONTHLY',
-        Metrics=[
-            'UnblendedCost',
-        ],
-    )
-
-    logger.info(f'last month start: {first_day_previous_month}, last month end: {last_day_previous_month}')
-
-    current_month_cost = float(response['ResultsByTime'][0]['Total']['UnblendedCost']['Amount'])
-    
-    logger.info(f'Current month:{current_month_cost}')
-    
-    # Forecast by the end of current month
-
+    # Forecast by the end of current month dates
     # By the end of the month, do a forecast between that day and the next one (1st day of next month)
     # to avoid api validation errors
     if today == last_day_current_month:
         last_day_current_month = last_day_current_month + timedelta(days=1)
 
-    logger.info(f'Today: {today}, month end: {last_day_current_month}')
-
-    response = client.get_cost_forecast(
-        TimePeriod={
-            'Start': str(today),
-            'End': str(last_day_current_month)
-        },
-        Metric='UNBLENDED_COST',
-        Granularity='MONTHLY'
-    )
-
-    forecasted_cost = float(response['Total']['Amount'])
-    logger.info(f'Forecasted cost: {forecasted_cost}')
-    
-    return previous_month_cost, current_month_cost, forecasted_cost
-
+    return (first_day_previous_month, first_day_current_month, today, last_day_current_month)
 
 def send_message_to_chatbot(topic_arn, message):
     """
@@ -166,6 +169,24 @@ def lambda_handler(event, context):
     AWS lambda main function
     """
     logger.info('Main handler start')
-    previous_month_cost, current_month_cost, forecasted_cost = get_cost()
+    first_day_previous_month, first_day_current_month, today, last_day_current_month = calculate_dates()
+    client = session.client('ce')
+    threads = []
+    thread_arguments = [
+        (first_day_previous_month, first_day_current_month, client, 'last_month' ),
+        (first_day_current_month, today, client, 'current_month' ),
+        (today, last_day_current_month, client, 'forecast' )
+        ]
+    
+    # start threads
+    for arg in thread_arguments:
+        t = threading.Thread(target=calculate_cost, args=arg)
+        threads.append(t)
+        t.start()
+    
+    # wait for threads to finish execution
+    for t in threads:
+        t.join()
+
     send_message_to_chatbot(environ.get('SNS_TOPIC_ARN'), message(previous_month_cost, current_month_cost, forecasted_cost))
     logger.info('Main handler end')
