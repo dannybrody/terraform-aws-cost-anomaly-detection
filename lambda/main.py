@@ -93,7 +93,6 @@ def calculate_dates():
     """
     logger.info('Calculating cost')
     today = datetime.now()
-    threads = []
     
     # current month dates
     first_day_current_month = date(today.year, today.month, 1)
