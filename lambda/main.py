@@ -9,12 +9,13 @@ import threading
 from datetime import date, timedelta, datetime
 from os import environ
 
+
 # Get aws session
 session = boto3.session.Session()
 # Get lambda default logger handler
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
+# Global variables
 previous_month_cost = 0
 current_month_cost = 0
 forecasted_cost = 0
