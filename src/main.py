@@ -137,7 +137,7 @@ def message(previous, current, forecast):
     previous = round(previous, 2)
     current = round(current, 2)
     forecast = round(forecast, 2)
-    percent = int(abs(forecast/previous -1) * 100)
+    percent = int(abs(forecast/(previous+0.001) -1) * 100)
     
     if forecast < previous:
         up_down = "Down"
@@ -164,7 +164,7 @@ def message(previous, current, forecast):
     }
     return msg
 
-def lambda_handler(event, context):
+def lambda_handler():
     """
     AWS lambda main function
     """
