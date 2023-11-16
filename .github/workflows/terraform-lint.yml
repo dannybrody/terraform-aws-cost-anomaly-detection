@@ -1,4 +1,4 @@
-name: Terraform tests
+name: Terraform linting
 on: [push]
 jobs:
   tflint:
