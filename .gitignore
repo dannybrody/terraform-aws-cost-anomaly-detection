@@ -33,3 +33,8 @@ override.tf.json
 # implementation test
 /test/*
 *.zip
+
+# python testing
+__pycache__
+.coverage
+.pytest_cache
