@@ -164,7 +164,7 @@ def message(previous, current, forecast):
     }
     return msg
 
-def lambda_handler():
+def lambda_handler(event, context):
     """
     AWS lambda main function
     """

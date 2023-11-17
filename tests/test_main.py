@@ -126,7 +126,9 @@ class CostAnomalyDetectionTests(unittest.TestCase):
     @patch('src.main.send_message_to_chatbot')
     @patch('src.main.calculate_cost')
     def test_lambda_handler(self, mock_calculate_cost, mock_send_message):
-        src.main.lambda_handler()
+        event = {}
+        context = {}
+        src.main.lambda_handler(event, context)
         # Add assertions based on your specific logic and mocks
         mock_calculate_cost.assert_called()
         mock_send_message.assert_called()

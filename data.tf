@@ -98,7 +98,7 @@ data "aws_iam_policy_document" "chatbot_channel_policy_document" {
 
 data "archive_file" "lambda_deployment_package" {
   type             = "zip"
-  source_dir       = "${path.module}/lambda"
+  source_dir       = "${path.module}/src"
   output_path      = "${path.module}/cost_monitor.zip"
   output_file_mode = "0666"
 }
