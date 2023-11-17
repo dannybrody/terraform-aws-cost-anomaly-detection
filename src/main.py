@@ -41,7 +41,7 @@ def generate_msg_id():
 
 def calculate_cost(start_date, end_date, client, mode):
     """
-    calculates costs, modifies global variables to allow the use of threads.
+    Calculates costs, modifies global variables to allow the use of threads.
     In order to use threads, the boto3 client must instantiated on the main thread and passed as a parameter
     """
     
@@ -89,7 +89,7 @@ def calculate_cost(start_date, end_date, client, mode):
 
 def calculate_dates():
     """
-    Calculates percentual increase/decrease of cost comparing current month forecast with previous month cost.
+    Calculates dates to be used in the calculate_costs function. First day and last day of month
     """
     logger.info('Calculating cost')
     today = datetime.now()
