@@ -22,3 +22,5 @@ jobs:
     - name: Run tests
       run: |
         python3 -m pytest -v -s tests
+        coverage run -m unittest discover
+        coverage report --omit "/opt/*","*init*","tests/*" -m --fail-under=80
