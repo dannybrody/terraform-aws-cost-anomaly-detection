@@ -70,21 +70,32 @@ resource "awscc_chatbot_slack_channel_configuration" "chatbot_slack_channel" {
   sns_topic_arns     = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[count.index].arn : var.sns_topic_arn]
 }
 
+resource "awscc_chatbot_microsoft_teams_channel_configuration" "chatbot_ms_teams_channel" {
+  count              = local.ms_teams_integration
+  configuration_name = "${var.name}-ms-teams-config"
+  iam_role_arn       = aws_iam_role.chatbot_role[0].arn
+  team_id            = var.team_id
+  teams_channel_id   = var.teams_channel_id
+  teams_tenant_id    = var.teams_tenant_id
+  guardrail_policies = ["arn:aws:iam::aws:policy/ReadOnlyAccess", ]
+  sns_topic_arns     = [var.sns_topic_arn == "" ? aws_sns_topic.cost_anomaly_topic[count.index].arn : var.sns_topic_arn]
+}
+
 resource "aws_iam_policy" "chatbot_channel_policy" {
-  count  = local.slack_integration
+  count  = local.chatbot_integration_role
   name   = "${var.name}-channel-policy"
   policy = data.aws_iam_policy_document.chatbot_channel_policy_document.json
 }
 
 
 resource "aws_iam_role" "chatbot_role" {
-  count              = local.slack_integration
+  count              = local.chatbot_integration_role
   name               = "${var.name}-chatbot-role"
   assume_role_policy = data.aws_iam_policy_document.chatbot_assume_role_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "chatbot_role_attachement" {
-  count      = local.slack_integration
+  count      = local.chatbot_integration_role
   role       = aws_iam_role.chatbot_role[0].name
   policy_arn = aws_iam_policy.chatbot_channel_policy[0].arn
 }
