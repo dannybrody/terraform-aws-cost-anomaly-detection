@@ -15,17 +15,43 @@ variable "alert_threshold" {
 variable "slack_channel_id" {
   description = "right click on the channel name, copy channel URL, and use the letters and number after the last /"
   type        = string
+  default     = ""
 }
 
 variable "slack_workspace_id" {
   description = "ID of your slack slack_workspace_id"
   type        = string
+  default     = ""
 }
 
 variable "enable_slack_integration" {
   description = "Set to false if slack integration is not needed and another subscriber to the SNS topic is preferred"
   type        = bool
   default     = true
+}
+
+variable "enable_ms_teams_integration" {
+  description = "Set to false if Microsoft Teams integration is not needed and another subscriber to the SNS topic is preferred"
+  type        = bool
+  default     = true
+}
+
+variable "team_id" {
+  description = "The id of the Microsoft Teams team"
+  type        = string
+  default     = ""
+
+}
+variable "teams_channel_id" {
+  description = "The id of the Microsoft Teams channel"
+  type        = string
+  default     = ""
+}
+
+variable "teams_tenant_id" {
+  description = "The id of the Microsoft Teams tenant"
+  type        = string
+  default     = ""
 }
 
 variable "tags" {

@@ -21,7 +21,9 @@ The Cost Anomaly Detection service does not have a cost by itself. However, it s
 If the Lambda function is deployed, on each execution it will make 3 calls to the Cost Explorer API, which has a cost of 1 cent per call.
 **Conclusion:** The cost of running this solution is quite low, however not zero.
 
-## Before starting follow these steps to allow AWS to access your slack workspace
+### Slack integration
+
+Before starting follow these steps to allow AWS to access your slack workspace
 
 1. Access the AWS console on the account that the Cost alerts will monitor. In a CT environment, all billing is commonly centralized in the root account
 2. Access AWS ChatBot service, choose Slack on the Chat client dropdown box, and click on Configure Client
@@ -41,6 +43,21 @@ Example: https://app.slack.com/client/T01JK23AB/slack-connect (This is an exampl
    
    ![AWS ChatBot](docs/images/chatbot_screenshot_3.png "AWS ChatBot")
 
+### Microsoft Teams integration
+
+Before starting follow these steps to allow AWS to access your MS Teams workspace
+
+1. Create a team in Microsoft Teams. (An existent Team can be also used)
+2. Create a channel in the team created before. This channel will be used to send the alerts.
+3. Add AWS Chatbot app to the channel. Select the team created before and go to "Manage Team" -> "Apps". Click on "+ Get more apps" and search for aws. Add the "aws" app and select the channel where we want to add the bot.
+   ![AWS ChatBot](docs/images/chatbot_screenshot_5.png "AWS ChatBot")
+4. Right-click on the channel that will be used to publish the alerts and select "Get link to channel". Copy the channel URL.  
+5. Access the AWS console on the account that the Cost alerts will monitor. In a CT environment, all billing is commonly centralized in the root account.
+6. Access AWS ChatBot service, choose Microsoft Teams on the Chat client dropdown box, and click on Configure Client.
+7. Paste the URL from step 4 and click on "Configure". (You'll need MS Teams admin privileges to authorize access from AWS to MS Teams)
+   ![AWS ChatBot](docs/images/chatbot_screenshot_4.png "AWS ChatBot")
+8. Continue with the module deployment.
+
 Once this is done, Terraform can be applied to create the alerts, subscriptions, SNS topic, and the configuration that maps the slack channel with the alerts.
 
 <!-- BEGIN_TF_DOCS -->
@@ -51,7 +68,7 @@ Once this is done, Terraform can be applied to create the alerts, subscriptions,
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.1 |
 | <a name="requirement_archive"></a> [archive](#requirement\_archive) | 2.4.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 4.63 |
-| <a name="requirement_awscc"></a> [awscc](#requirement\_awscc) | ~>0.48 |
+| <a name="requirement_awscc"></a> [awscc](#requirement\_awscc) | ~> 0.68 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | 3.2.1 |
 
 ## Providers
@@ -59,8 +76,8 @@ Once this is done, Terraform can be applied to create the alerts, subscriptions,
 | Name | Version |
 |------|---------|
 | <a name="provider_archive"></a> [archive](#provider\_archive) | 2.4.0 |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 4.63 |
-| <a name="provider_awscc"></a> [awscc](#provider\_awscc) | ~>0.48 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 4.67.0 |
+| <a name="provider_awscc"></a> [awscc](#provider\_awscc) | 0.65.0 |
 
 ## Modules
 
@@ -82,6 +99,7 @@ No modules.
 | [aws_lambda_function.cost_alert](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
 | [aws_lambda_permission.allow_events_bridge_to_run_lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
 | [aws_sns_topic.cost_anomaly_topic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
+| [awscc_chatbot_microsoft_teams_channel_configuration.chatbot_ms_teams_channel](https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/chatbot_microsoft_teams_channel_configuration) | resource |
 | [awscc_chatbot_slack_channel_configuration.chatbot_slack_channel](https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/chatbot_slack_channel_configuration) | resource |
 | [archive_file.lambda_deployment_package](https://registry.terraform.io/providers/hashicorp/archive/2.4.0/docs/data-sources/file) | data source |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
@@ -99,14 +117,18 @@ No modules.
 | <a name="input_accounts"></a> [accounts](#input\_accounts) | List of AWS accounts to monitor. Use it when deploying the module on the root account of an organization | `list(string)` | `[]` | no |
 | <a name="input_alert_threshold"></a> [alert\_threshold](#input\_alert\_threshold) | Defines the value to trigger an alert. Depending on the value chosen for the threshold\_type variable, it will represent a percentage or an absolute ammount of money | `number` | n/a | yes |
 | <a name="input_deploy_lambda"></a> [deploy\_lambda](#input\_deploy\_lambda) | flag to choose if the lambda will be deployed or not | `bool` | `true` | no |
+| <a name="input_enable_ms_teams_integration"></a> [enable\_ms\_teams\_integration](#input\_enable\_ms\_teams\_integration) | Set to false if Microsoft Teams integration is not needed and another subscriber to the SNS topic is preferred | `bool` | `true` | no |
 | <a name="input_enable_slack_integration"></a> [enable\_slack\_integration](#input\_enable\_slack\_integration) | Set to false if slack integration is not needed and another subscriber to the SNS topic is preferred | `bool` | `true` | no |
 | <a name="input_lambda_frequency"></a> [lambda\_frequency](#input\_lambda\_frequency) | Frequency to run the lambda (cron formating is also accepted) | `string` | `"cron(0 13 ? * MON *)"` | no |
-| <a name="input_lambda_timeout"></a> [lambda\_timeout](#input\_lambda\_timeout) | maximum amount of time in seconds that the Lambda function can run | `number` | `5` | no |
+| <a name="input_lambda_timeout"></a> [lambda\_timeout](#input\_lambda\_timeout) | maximum amount of time in seconds that the Lambda function can run | `number` | `3` | no |
 | <a name="input_name"></a> [name](#input\_name) | name for the monitors, topic, etc | `string` | `"cost-anomaly-monitor"` | no |
-| <a name="input_slack_channel_id"></a> [slack\_channel\_id](#input\_slack\_channel\_id) | right click on the channel name, copy channel URL, and use the letters and number after the last / | `string` | n/a | yes |
-| <a name="input_slack_workspace_id"></a> [slack\_workspace\_id](#input\_slack\_workspace\_id) | ID of your slack slack\_workspace\_id | `string` | n/a | yes |
+| <a name="input_slack_channel_id"></a> [slack\_channel\_id](#input\_slack\_channel\_id) | right click on the channel name, copy channel URL, and use the letters and number after the last / | `string` | `""` | no |
+| <a name="input_slack_workspace_id"></a> [slack\_workspace\_id](#input\_slack\_workspace\_id) | ID of your slack slack\_workspace\_id | `string` | `""` | no |
 | <a name="input_sns_topic_arn"></a> [sns\_topic\_arn](#input\_sns\_topic\_arn) | ARN of an already existing SNS topic to send alerts. If a value is provided, the module will not create a SNS topic | `string` | `""` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to apply to resources | `map(string)` | `{}` | no |
+| <a name="input_team_id"></a> [team\_id](#input\_team\_id) | The id of the Microsoft Teams team | `string` | `""` | no |
+| <a name="input_teams_channel_id"></a> [teams\_channel\_id](#input\_teams\_channel\_id) | The id of the Microsoft Teams channel | `string` | `""` | no |
+| <a name="input_teams_tenant_id"></a> [teams\_tenant\_id](#input\_teams\_tenant\_id) | The id of the Microsoft Teams tenant | `string` | `""` | no |
 | <a name="input_threshold_type"></a> [threshold\_type](#input\_threshold\_type) | Indicate if the alert will trigger based on a absolute amount or a percentage | `string` | n/a | yes |
 
 ## Outputs
