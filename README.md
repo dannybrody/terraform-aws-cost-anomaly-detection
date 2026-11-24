@@ -115,6 +115,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_accounts"></a> [accounts](#input\_accounts) | List of AWS accounts to monitor. Use it when deploying the module on the root account of an organization | `list(string)` | `[]` | no |
+| <a name="input_additional_thresholds"></a> [additional\_thresholds](#input\_additional\_thresholds) | Additional anomaly-impact conditions ANDed with threshold\_type and alert\_threshold. Use a type different from threshold\_type; repeating a type adds no independent condition. An empty list preserves the single-threshold expression. | `list(object({ threshold_type = string, alert_threshold = number }))` | `[]` | no |
 | <a name="input_alert_threshold"></a> [alert\_threshold](#input\_alert\_threshold) | Defines the value to trigger an alert. Depending on the value chosen for the threshold\_type variable, it will represent a percentage or an absolute ammount of money | `number` | n/a | yes |
 | <a name="input_deploy_lambda"></a> [deploy\_lambda](#input\_deploy\_lambda) | flag to choose if the lambda will be deployed or not | `bool` | `true` | no |
 | <a name="input_enable_ms_teams_integration"></a> [enable\_ms\_teams\_integration](#input\_enable\_ms\_teams\_integration) | Set to false if Microsoft Teams integration is not needed and another subscriber to the SNS topic is preferred | `bool` | `true` | no |

@@ -13,7 +13,7 @@ variable "alert_threshold" {
 }
 
 variable "additional_thresholds" {
-  description = "Additional anomaly-impact conditions ANDed with threshold_type and alert_threshold. An empty list preserves the single-threshold expression."
+  description = "Additional anomaly-impact conditions ANDed with threshold_type and alert_threshold. Use a type different from threshold_type; repeating a type adds no independent condition. An empty list preserves the single-threshold expression."
   type = list(object({
     threshold_type  = string
     alert_threshold = number
