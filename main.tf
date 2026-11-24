@@ -40,10 +40,26 @@ resource "aws_ce_anomaly_monitor" "linked_account_anomaly_monitor" {
 resource "aws_ce_anomaly_subscription" "anomaly_subscription" {
   name = "${local.multi_account ? aws_ce_anomaly_monitor.linked_account_anomaly_monitor[0].name : aws_ce_anomaly_monitor.service_anomaly_monitor[0].name}-subscription"
   threshold_expression {
-    dimension {
-      key           = var.threshold_type
-      values        = [var.alert_threshold]
-      match_options = ["GREATER_THAN_OR_EQUAL"]
+    dynamic "dimension" {
+      for_each = length(var.additional_thresholds) == 0 ? [1] : []
+      content {
+        key           = var.threshold_type
+        values        = [var.alert_threshold]
+        match_options = ["GREATER_THAN_OR_EQUAL"]
+      }
+    }
+    dynamic "and" {
+      for_each = length(var.additional_thresholds) == 0 ? [] : concat([{
+        threshold_type  = var.threshold_type
+        alert_threshold = var.alert_threshold
+      }], var.additional_thresholds)
+      content {
+        dimension {
+          key           = and.value.threshold_type
+          values        = [and.value.alert_threshold]
+          match_options = ["GREATER_THAN_OR_EQUAL"]
+        }
+      }
     }
   }
 

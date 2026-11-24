@@ -12,6 +12,25 @@ variable "alert_threshold" {
   type        = number
 }
 
+variable "additional_thresholds" {
+  description = "Additional anomaly-impact conditions ANDed with threshold_type and alert_threshold. An empty list preserves the single-threshold expression."
+  type = list(object({
+    threshold_type  = string
+    alert_threshold = number
+  }))
+  default  = []
+  nullable = false
+
+  validation {
+    condition = alltrue([
+      for threshold in var.additional_thresholds :
+      contains(["ANOMALY_TOTAL_IMPACT_ABSOLUTE", "ANOMALY_TOTAL_IMPACT_PERCENTAGE"], threshold.threshold_type) &&
+      threshold.alert_threshold >= 0 && threshold.alert_threshold <= 10000000000
+    ])
+    error_message = "Additional thresholds must use ANOMALY_TOTAL_IMPACT_ABSOLUTE or ANOMALY_TOTAL_IMPACT_PERCENTAGE and a value between 0 and 10000000000."
+  }
+}
+
 variable "slack_channel_id" {
   description = "right click on the channel name, copy channel URL, and use the letters and number after the last /"
   type        = string
